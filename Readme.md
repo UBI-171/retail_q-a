@@ -14,6 +14,9 @@ Let’s break it down into a high-level architecture and then go step-by-step.
 6. **Response Handler** – Returns results in user-friendly format.
 7. **(Optional)** – Use LangChain or Amazon PartyRock for rapid prototyping.
 
+
+![Architecture](image.png)
+
 ---
 
 ## ✅ Step-by-Step Implementation Plan
