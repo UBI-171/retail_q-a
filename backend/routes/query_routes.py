@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Body
+from fastapi import APIRouter, HTTPException, Query, Body
 from utils.query_helper import get_sql_query
 from pydantic import BaseModel
 from utils.database_helper import execute_sql_query
@@ -18,6 +18,8 @@ async def generate_sql(question : str = Query(..., description="Natural language
 
 @router.post("/execute-sql-query")
 async def execute_query(payload : Payload = Body(..., description="Query for the database")):
+    if not payload.query.strip().lower().startswith("select"):
+        raise HTTPException(status_code=403, detail="Only SELECT queries are allowed.")
     response = await execute_sql_query(payload.query)
     return {
         "query" : payload.query,
