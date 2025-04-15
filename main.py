@@ -1,12 +1,6 @@
-from utils.query_helper import get_sql_query
-from fastapi import FastAPI, Query
+from fastapi import FastAPI
+from routes.query_routes import router as query_router
 
 app = FastAPI()
 
-@app.get("/generate-sql")
-async def generate_sql(question : str = Query(..., description="Natura language question for the database")):
-    sql_query = get_sql_query(question)
-    return {
-        "question" : question,
-        "generated_sql" : sql_query.strip()
-    }
+app.include_router(query_router, prefix="/v1")

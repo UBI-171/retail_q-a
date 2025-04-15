@@ -1,5 +1,5 @@
 from utils.few_shot_examples import few_shots
-from utils.table_metadata import get_table_info
+from utils.database_helper import get_table_info
 
 def construct_prompt(question):
     table_info : dict = get_table_info()
