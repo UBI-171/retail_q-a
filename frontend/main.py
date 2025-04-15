@@ -32,7 +32,8 @@ if st.button("Run Query"):
                         exec_response.raise_for_status()
                         result = exec_response.json()
 
-                        st.text_area("Result:", value=str(result), height=200, disabled=True)
+                        # st.text_area("Result:", value=str(result), height=200, disabled=True)
+                        st.code(result["result"], language="json")
             except requests.exceptions.HTTPError as http_err:
                 try:
                     error_detail = http_err.response.json().get("detail",str(http_err))
