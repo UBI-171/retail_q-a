@@ -24,11 +24,11 @@ Resources:
       Environment:
         Variables:
           AWS_DB_REGION: us-west-2
-          DB_HOST: talk-to-db-poc.cxqua08ywknm.ap-south-1.rds.amazonaws.com
-          DB_NAME: tshirt_store
-          DB_PASSWORD: root123!
-          DB_PORT: '3306'
-          DB_USER: root
+          DB_HOST: masked
+          DB_NAME: masked
+          DB_PASSWORD: masked
+          DB_PORT: masked
+          DB_USER: masked
           MODEL_ID: meta.llama3-1-70b-instruct-v1:0
       EventInvokeConfig:
         MaximumEventAgeInSeconds: 21600
