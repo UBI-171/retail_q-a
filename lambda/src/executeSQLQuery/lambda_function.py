@@ -4,6 +4,34 @@ import os
 
 conn = None
 
+
+def bedrock_formatted_response(body):
+    formatted_response = {
+        "messageVersion": "1.0",
+        "response": {
+            "actionGroup": "ExecuteSQLQuery",
+            "function": "executeSQLQuery",
+            "functionResponse": {
+            "responseBody": {
+                "TEXT": {
+                "body": json.dumps(body, default=str)
+                }
+            }
+            }
+        },
+        "sessionAttributes": {},
+        "promptSessionAttributes": {},
+        "knowledgeBasesConfiguration": []
+        }
+    return formatted_response
+
+
+def extract_query_from_parameters(parameters):
+    for param in parameters:
+        if param.get("name") == "query":
+            return param.get("value")
+    return None
+
 def get_connection():
     global conn
     if conn is None or not conn.open:
@@ -26,14 +54,18 @@ def get_connection():
     return conn
 
 def lambda_handler(event, context):
+    
+    print("📦 Incoming event:", json.dumps(event))
+    
     connection = get_connection()
     
-    query = event.get('query', 'SELECT NOW()')
+    parameters = event.get("parameters", [])
+    query = extract_query_from_parameters(parameters)
     
     if not query.strip().lower().startswith("select"):
         return {
-            "statusCode": 403,
-            "body": "Only SELECT queries are allowed."
+            "contentType": "application/json",
+            "body": {"error":"Only SELECT queries are allowed."}
         }
     
     try:
@@ -46,15 +78,11 @@ def lambda_handler(event, context):
                     result.append(dict(row._mapping))
                 else:
                     result.append(dict(row))
+                    
+            print("✈️ Outgoing response:", json.dumps(result, default = str))
+
+            
+            return bedrock_formatted_response(result)
     except Exception as e:
         print(f"❌ Error: {e}")
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"error": str(e)})
-        }
-    
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps(result, indent=2, default=str)
-    }
+        return bedrock_formatted_response({"error": str(e)})

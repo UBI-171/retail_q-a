@@ -1,0 +1,9 @@
+{
+    "parameters": [
+        {
+            "name": "query",
+            "type": "string",
+            "value": "SELECT * FROM t_shirts LIMIT 2"
+        }
+    ]
+}

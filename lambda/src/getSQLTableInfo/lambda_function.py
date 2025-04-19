@@ -1,8 +1,30 @@
+from enum import Enum
 import json
 import pymysql
 import os
 
 conn = None
+
+def bedrock_formatted_response(body):
+    formatted_response = {
+        "messageVersion": "1.0",
+        "response": {
+            "actionGroup": "GetTableInfo",
+            "function": "describeDatabaseSchema",
+            "functionResponse": {
+            "responseBody": {
+                "TEXT": {
+                "body": json.dumps(body, default=str)
+                }
+            }
+            }
+        },
+        "sessionAttributes": {},
+        "promptSessionAttributes": {},
+        "knowledgeBasesConfiguration": []
+        }
+    return formatted_response
+
 
 def get_connection():
     global conn
@@ -30,8 +52,10 @@ def get_connection():
         raise
 
 def lambda_handler(event, context):
+    print("📦 Incoming event:", json.dumps(event))
+    
     connection = get_connection()
-    table_info = {}
+    table_info = {"tables": []}
     
     try:
         with connection.cursor() as cursor:
@@ -41,15 +65,24 @@ def lambda_handler(event, context):
             for table in tables:
                 cursor.execute(f"DESCRIBE `{table}`;")
                 columns = cursor.fetchall()
-                table_info[table] = columns
-            return {
-            "statusCode": 200,
-            "headers": {"Content-Type": "application/json"},
-            "body": json.dumps(table_info, indent=2, default=str)
-            }
+                formatted_columns = []
+                for col in columns:
+                    formatted_columns.append({
+                        "name": col["Field"],
+                        "type": col["Type"],
+                        "nullable": col["Null"] == "YES",
+                        "key": col["Key"],
+                        "default": col["Default"],
+                        "extra": col["Extra"]
+                    })
+
+                table_info["tables"].append({
+                        "name": table,
+                        "columns": formatted_columns
+                        })
+
+            print("✈️ Outgoing response:", json.dumps(table_info))
+            return bedrock_formatted_response(table_info)
     except Exception as e:
         print(f"❌ Error: {type(e).__name__} - {str(e)}")
-        return {
-            "statusCode": 500,
-            "body": json.dumps({"error": f"{type(e).__name__} - {str(e)}"})
-        }
+        return bedrock_formatted_response({"error": f"{type(e).__name__} - {str(e)}"})
