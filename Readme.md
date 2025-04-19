@@ -1,131 +1,112 @@
-**Generative AI application that can convert natural language into SQL queries**, execute them, and return results to the user. And I want to do this **using AWS services** like **Bedrock** and **Llama**, keeping the stack cloud-native as much as possible.
+# 🧠 Talk to Your Database 💹
 
-Let’s break it down into a high-level architecture and then go step-by-step.
-
----
-
-## 🏗️ High-Level Architecture Overview
-
-1. **Frontend** – User inputs natural language.
-2. **API Gateway + Lambda** – Handles the request.
-3. **Bedrock + Llama 2** – Translates natural language to SQL.
-4. **Lambda or RDS Proxy** – Executes SQL securely.
-5. **Database** – Amazon RDS (e.g., PostgreSQL or MySQL).
-6. **Response Handler** – Returns results in user-friendly format.
-7. **(Optional)** – Use LangChain or Amazon PartyRock for rapid prototyping.
-
-
-![Architecture](image.png)
+A natural language interface to query your database — powered by AI.
 
 ---
 
-## ✅ Step-by-Step Implementation Plan
+## ✨ Overview
+
+This project allows users to **ask questions in plain English** and receive answers based on their **SQL database** — no SQL knowledge required! It leverages modern LLMs and serverless tech to interpret questions, generate SQL, run queries, and respond with user-friendly insights.
 
 ---
 
-### 1. **Set Up Your Database (Amazon RDS)**
+## 🏗️ Architecture Evolution
 
-- Use **Amazon RDS** (PostgreSQL/MySQL/SQL Server).
-- Prepare your schema (e.g., customers, orders, products).
-- Enable access via **RDS Proxy** for secure Lambda access.
+### ⚙️ Version 1 – FastAPI + LLMs + Lambda (Manual Orchestration)
 
----
+🧱 **Stack:**
+- `Streamlit UI` → `FastAPI Backend` → `Llama Model (via Bedrock)` → `SQL Generation & Execution`
+- Separate endpoints for:
+  - `/v1/generate-sql`: Use LLM to translate question to SQL
+  - `/v1/execute-sql-query`: Execute SQL on RDS/MySQL
 
-### 2. **Natural Language Interface (Frontend)**
+🛠️ **Flow:**
+1. User enters a question in Streamlit.
+2. FastAPI sends the question to LLM via Bedrock to generate SQL.
+3. FastAPI then executes that SQL via a DB connection.
+4. Response shown as JSON or text.
 
-- Could be a simple **React/Vue** app hosted on **Amazon S3 + CloudFront**, or use **Amazon Amplify** for quick setup.
-- User types: *“Show me all customers who ordered more than $1000 last month.”*
+📉 **Limitations:**
+- More infra management (API server)
+- Manual orchestration logic
+- Less flexibility for adding tools/logic
 
----
-
-### 3. **API Gateway + Lambda (Middleware Layer)**
-
-- **Amazon API Gateway**: Accepts requests from frontend.
-- **AWS Lambda**: Serverless compute to handle:
-  - Request parsing.
-  - Auth.
-  - Bedrock interaction.
-  - SQL execution.
 
 ---
 
-### 4. **Amazon Bedrock + Llama 2 (LLM Layer)**
+### 🤖 Version 2 – Bedrock Agent + Lambda Tools (Serverless AI)
 
-- Use **Bedrock with Meta Llama 2** for prompt engineering:
-  - In Bedrock, select **Llama 2** or **Anthropic Claude**.
-  - Construct prompts like:
+🧱 **Stack:**
+- `Streamlit UI` → `Bedrock Agent` (Claude-powered)
+  - 🔌 **Tool 1:** GetTableInfo Lambda
+  - 🔌 **Tool 2:** ExecuteSQLQuery Lambda
 
-    ```
-    You are an SQL expert. Convert the following natural language query into an SQL query for the given database schema:
+🛠️ **Flow:**
+1. User asks a question in Streamlit.
+2. Streamlit uses `boto3` to call `invoke_agent()` directly.
+3. Bedrock Agent uses Claude to:
+   - Parse intent
+   - Call Lambda tools as needed
+   - Compose and return a natural language answer
+4. Result shown in the frontend.
 
-    Schema:
-    Table: orders (id, customer_id, total_amount, order_date)
-    Table: customers (id, name, email)
-
-    Question: Show me all customers who ordered more than $1000 last month.
-
-    SQL:
-    ```
-
-- You can customize the prompt for accuracy and safety.
-
----
-
-### 5. **Execute SQL via Lambda**
-
-- Once the LLM returns a query:
-  - Use **Lambda** to run the query via **RDS Proxy**.
-  - Validate query to avoid unsafe executions (add SQL sanitizer or approval layer if needed).
-  
----
-
-### 6. **Return Results to User**
-
-- Format SQL response into readable format (JSON or table).
-- Send it back to frontend via API Gateway.
+🚀 **Advantages:**
+- Fully serverless 🟢
+- Less backend code to manage 🧼
+- Easy tool orchestration by the Agent 🛠️
+- Natural conversation-like responses 💬
 
 ---
 
-### 7. **(Optional) Add Embedding Search or Table Description**
+## 💻 Streamlit UI
 
-- Use **Bedrock Titan Embeddings** or **Amazon OpenSearch** for vector-based search (e.g., matching user intent to known queries).
-- Use **LangChain** with AWS integrations to manage multi-step reasoning (e.g., “Find top 5 customers and their last order”).
+Simple, clean interface to ask questions:
 
----
+```python
+question = st.text_input("Enter your question")
+```
 
-## 🧠 Tools & AWS Services Cheat Sheet
-
-| Task | AWS Service |
-|------|-------------|
-| Natural Language to SQL | Amazon Bedrock + Llama 2 |
-| Compute / Middleware | AWS Lambda |
-| API Gateway | Amazon API Gateway |
-| Database | Amazon RDS (PostgreSQL/MySQL) |
-| Secure DB Connection | Amazon RDS Proxy |
-| Frontend Hosting | Amazon Amplify / S3 + CloudFront |
-| Auth (optional) | Amazon Cognito |
-| Prompt Workflow (optional) | LangChain + AWS Lambda |
-| Logging | Amazon CloudWatch |
-| Security / Secrets | AWS Secrets Manager |
+Example questions:
+- *“What is the stock count of black Adidas t-shirts?”*
+- *“List all discounts available for Nike products.”*
 
 ---
 
-## 🔒 Security Tips
+## 🧠 Bedrock Agent Configuration (v2)
 
-- Never directly execute LLM-generated SQL without some validation.
-- Use IAM roles and policies for access control.
-- Store DB credentials in **AWS Secrets Manager**, not in code.
-- Enable **CloudWatch** for logging.
-
----
-
-## 🚀 Bonus: Fast Prototyping
-
-Want to test this fast? Try building an MVP using:
-
-- **Amazon PartyRock** for no-code GenAI.
-- Or connect **LangChain + Bedrock** in a notebook to validate query generation before integrating fully.
+You’ll need:
+- ✅ A Bedrock Agent with a Claude model
+- ✅ Two Lambda tools integrated:
+  - `GetTableInfo` (returns table schema)
+  - `ExecuteSQLQuery` (executes SQL and returns result)
+- ✅ Permissions to invoke Bedrock Agent from your environment
 
 ---
 
-Want a code sample for the Lambda function or a Bedrock prompt template?
+## 🚀 Getting Started
+
+1. 🛠️ Configure AWS credentials for `boto3`
+2. ✅ Deploy Bedrock Agent with correct `agentId` and `aliasId`
+3. 🧪 Run Streamlit UI:
+```bash
+streamlit run app.py
+```
+4. 💬 Ask your database questions!
+
+---
+
+## 📌 TODOs & Ideas
+
+- [ ] Add chat memory in Streamlit 💬
+- [ ] Enable table visualizations 📊
+- [ ] Support for multi-step queries
+- [ ] Extend tools to support INSERT/UPDATE/DELETE ❗
+
+---
+
+## 🙌 Credits
+
+Built with ❤️ using:
+- 🦙 Claude (via Amazon Bedrock)
+- 🐍 Python & Streamlit
+- 🛠️ AWS Lambda & RDS
